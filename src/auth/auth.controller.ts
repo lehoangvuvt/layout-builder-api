@@ -20,7 +20,7 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @Get('/sign-out')
   async signOut(@Req() req: Request, @Res() res: Response) {
-    res.clearCookie('access_token')
+    res.clearCookie('access_token', { secure: true, sameSite: 'none' })
     return res.status(200).json({ message: 'Sign out success' })
   }
 
