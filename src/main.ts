@@ -14,7 +14,7 @@ async function bootstrap() {
   app.use(express.json({ limit: '50mb' }))
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new LoggingInterceptor())
-  const port = process.env.PORT ?? 3001
+  const port = process.env.PORT || 3001
   await app.listen(port);
 }
 bootstrap();
