@@ -10,7 +10,7 @@ import { Test2Middleware } from './middlewares/test2.middleware';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser())
-  app.use(cors({ credentials: true, origin: "http://localhost:3000" }))
+  app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }))
   app.use(express.json({ limit: '50mb' }))
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new LoggingInterceptor())
