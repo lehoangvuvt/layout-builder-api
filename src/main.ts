@@ -13,7 +13,8 @@ async function bootstrap() {
   app.use(cors({ credentials: true, origin: "http://localhost:3000" }))
   app.use(express.json({ limit: '50mb' }))
   app.useGlobalPipes(new ValidationPipe());
-  app.useGlobalInterceptors(new LoggingInterceptor());
-  await app.listen(3001);
+  app.useGlobalInterceptors(new LoggingInterceptor())
+  const port = process.env.PORT ?? 3001
+  await app.listen(port);
 }
 bootstrap();
