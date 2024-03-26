@@ -11,7 +11,7 @@ export class AuthController {
   async login(@Body() loginDTO: Record<string, string>, @Res() res: Response) {
     const response = await this.authService.login(loginDTO.username, loginDTO.password)
     if (response.access_token) {
-      res.cookie('access_token', response.access_token, { httpOnly: true, sameSite: 'none' })
+      res.cookie('access_token', response.access_token, { httpOnly: true, sameSite: 'none', secure: true })
       return res.status(200).json({ message: "Success" })
     }
     return res.status(401).json({ message: 'Invalid  username or password' });
