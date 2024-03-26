@@ -1,0 +1,29 @@
+import { Body, Controller, Get, Post, Req, Res, UseGuards, UseInterceptors } from '@nestjs/common';
+import { UserService } from './user.service';
+import { RegisterDTO } from './dto/register.dto';
+import { Response } from 'express';
+import { AuthGuard } from 'src/guards/auth.guard';
+import { FormatResponseInterceptor } from 'src/interceptors/formatResponse.interceptor';
+
+@Controller('user')
+export class UserController {
+  constructor(private readonly userService: UserService) { }
+
+  @Post("/register")
+  async register(@Body() regiterDTO: RegisterDTO, @Res() res: Response) {
+    const response = await this.userService.register(regiterDTO)
+    return res.status(200).json(response)
+  }
+
+  @UseGuards(AuthGuard)
+  @UseInterceptors(FormatResponseInterceptor)
+  @Get("/layouts")
+  async getMyLayouts(@Req() req: any, @Res() res: Response) {
+    const userId = req.user.sub
+    const layouts = await this.userService.getUserLayouts(userId);
+    return res.status(200).json({
+      message: 'success',
+      data: layouts,
+    })
+  }
+}
