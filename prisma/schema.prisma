@@ -19,17 +19,19 @@ model User {
   updatedAt DateTime?
   username  String    @unique
   password  String
+  email     String    @unique
   name      String?
   avatar    String?
   layouts   Layout[]
+  gitId     BigInt?
 }
 
 model Layout {
   id        Int       @id @default(autoincrement())
   createdAt DateTime
   updatedAt DateTime?
-  name String?
-  tags String[]
+  name      String?
+  tags      String[]
   metadata  String
   author    User      @relation(fields: [authorId], references: [id])
   authorId  Int

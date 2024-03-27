@@ -1,11 +1,23 @@
-import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request, Response } from 'express';
 import { AuthGuard } from 'src/guards/auth.guard';
+import { UserService } from 'src/user/user.service';
+import { JwtService } from '@nestjs/jwt';
+import { Octokit } from "@octokit/rest";
+import fetch from "node-fetch";
+import axios from 'axios';
+import { appendFile } from 'fs'
+import shortid from 'shortid';
+import { nanoid } from 'nanoid';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UserService,
+    private jwtSerivce: JwtService
+  ) { }
 
   @Post('/login')
   async login(@Body() loginDTO: Record<string, string>, @Res() res: Response) {
@@ -32,4 +44,127 @@ export class AuthController {
     if (!user) return res.status(401).json({ message: 'User not found' })
     return res.status(200).json(user)
   }
+
+  @Get("/oauth/github/repo/:layoutId")
+  async grantAccessRepoGithub(@Param() params: { layoutId: string }, @Req() req: Request, @Res() res: Response) {
+    const { code } = req.query;
+    const accessToken = await this.authService.getGithubToken(code.toString())
+    res.cookie('grp_act', accessToken, { sameSite: 'none', secure: true, httpOnly: true })
+    res.redirect(`${process.env.CLIENT_URL}/overlay-builder/setup?id=${params.layoutId}&mode=granted`)
+  }
+
+  @Get('/oauth/github-repos')
+  async getGithubRepos(@Req() req: Request, @Res() res: Response) {
+    if (req.cookies && req.cookies['grp_act']) {
+      const response = await axios({
+        method: "GET",
+        url: ` https://api.github.com/user/repos?page=0&per_page=5&sort=created&direction=desc`,
+        headers: {
+          Authorization: `token ${req.cookies['grp_act']}`,
+        },
+      })
+      const data = response.data
+      return res.status(200).json({ message: 'success', data })
+    }
+    throw new UnauthorizedException()
+  }
+
+  @Post('/oauth/github-commit')
+  async commitCodeToRepo(@Req() req: Request, @Body() body: any, @Res() res: Response) {
+    console.log(req.cookies)
+    if (req.cookies && req.cookies['grp_act']) {
+      const { repo, code } = body
+      const { owner, name } = repo
+      const octokit = new Octokit({
+        baseUrl: "https://api.github.com",
+        auth: `token ${req.cookies['grp_act']}`,
+      });
+
+      const OWNER_NAME = owner.login
+      const REPO_NAME = name
+      const FILE_PATH = `components/${nanoid()}.tsx`
+      const AUTHOR_NAME = owner.login
+      const AUTHOR_EMAIL = "hoangvule100@gmail.com"
+      const user_info = {
+        name: AUTHOR_NAME,
+        email: AUTHOR_EMAIL
+      }
+
+      await octokit.rest.repos.createOrUpdateFileContents({
+        owner: OWNER_NAME,
+        repo: REPO_NAME,
+        path: FILE_PATH,
+        message: "Create file",
+        content: Buffer.from(code).toString('base64'),
+        committer: { ...user_info },
+        author: { ...user_info },
+      })
+
+      return res.status(201).json({ message: 'success' })
+    }
+    throw new UnauthorizedException()
+  }
+
+  @Get("/oauth/:type")
+  async oauthGoogle(@Param() params: { type: 'google' | 'github' | 'facebook' }, @Req() req: Request, @Res() res: Response) {
+    let existedUser = null
+    switch (params.type) {
+      case "google":
+        const data = await this.authService.getGoogleToken(req.query)
+        if (!data) throw new UnauthorizedException()
+        const { access_token, id_token } = data
+        const googleAccountData = await this.authService.getGoogleUser(id_token, access_token)
+        const { email: gmail, picture, id: ggId } = googleAccountData
+        existedUser = await this.userService.findUserByEmail(gmail)
+        if (existedUser) {
+          const payload = { sub: existedUser.id, username: existedUser.username }
+          const access_token = await this.jwtSerivce.signAsync(payload);
+          res.cookie('access_token', access_token, { httpOnly: true, sameSite: 'none', secure: true })
+          res.redirect(`${process.env.CLIENT_URL}/search`)
+        } else {
+          const ggUsername = `gid_${ggId}`
+          const data = await this.userService.register({
+            email: gmail,
+            username: ggUsername,
+            avatar: picture,
+            password: ggUsername
+          })
+          if (data === -1 || data === -2) return
+          const payload = { sub: data.id, username: ggUsername }
+          const access_token = await this.jwtSerivce.signAsync(payload);
+          res.cookie('access_token', access_token, { httpOnly: true, sameSite: 'none', secure: true })
+          res.redirect(`${process.env.CLIENT_URL}/search`)
+        }
+        break;
+      case 'github':
+        const { code } = req.query
+        const accessToken = await this.authService.getGithubToken(code.toString())
+        const userData = await this.authService.getGithubUserInfo(accessToken)
+        const { id: ghId, avatar_url, email: ghEmail } = userData
+        const gh_userName = `ghid_${ghId}`;
+        existedUser = await this.userService.findUserByEmail(ghEmail);
+        if (existedUser) {
+          const payload = { sub: existedUser.id, username: existedUser.username }
+          const access_token = await this.jwtSerivce.signAsync(payload);
+          res.cookie('access_token', access_token, { httpOnly: true, sameSite: 'none', secure: true })
+          res.redirect(`${process.env.CLIENT_URL}/search`)
+        } else {
+          const data = await this.userService.register({
+            email: ghEmail,
+            username: gh_userName,
+            avatar: avatar_url,
+            password: gh_userName
+          })
+          if (data === -1 || data === -2) return
+          const payload = { sub: data.id, username: gh_userName }
+          const access_token = await this.jwtSerivce.signAsync(payload);
+          res.cookie('access_token', access_token, { httpOnly: true, sameSite: 'none', secure: true })
+          res.redirect(`${process.env.CLIENT_URL}/search`)
+        }
+        break
+      case 'facebook':
+        break;
+    }
+  }
+
 }

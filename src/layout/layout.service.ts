@@ -27,6 +27,7 @@ export class LayoutService {
         })
         const page = query['page'] ? parseInt(query['page'][0]) : 0
         const q = query['q'] ? query['q'][0] : ''
+        const take = query['take'] ? parseInt(query['take'][0]) : 10
         const whereInput: Prisma.LayoutWhereInput = {
             OR: [
                 {
@@ -50,9 +51,8 @@ export class LayoutService {
                 }
             ]
         }
-        const take = 10
         const count = await this.prisma.layout.count({
-            where: whereInput
+            where: whereInput,
         })
         const layouts = await this.prisma.layout.findMany({
             where: whereInput,
@@ -82,5 +82,10 @@ export class LayoutService {
             }
         });
         return layout
+    }
+
+    async getTopLayouts() {
+        const layouts = await this.prisma.layout.findMany({ take: 5 })
+        return layouts
     }
 }   

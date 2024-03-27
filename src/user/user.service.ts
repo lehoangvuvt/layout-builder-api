@@ -8,18 +8,22 @@ export class UserService {
     constructor(private prisma: PrismaService) { }
 
     async register(registerDTO: RegisterDTO) {
-        const { username, password } = registerDTO
-        const existed = await this.prisma.user.findUnique({ where: { username } })
-        if (existed) return 'username existed'
+        const { username, password, email, avatar } = registerDTO
+        const existedUsername = await this.prisma.user.findUnique({ where: { username } })
+        const existedEmail = await this.prisma.user.findUnique({ where: { email } })
+        if (existedUsername) return -1
+        if (existedEmail) return -2
         const hashedPassword = hashSync(password, 10)
-        return this.prisma.user.create({
+        const user = await this.prisma.user.create({
             data: {
                 createdAt: new Date(),
                 username,
+                email,
                 password: hashedPassword,
+                avatar
             }
         })
-
+        return user
     }
 
     async login(username: string, password: string) {
@@ -39,6 +43,16 @@ export class UserService {
         const user = await this.prisma.user.findUnique({ where: { id: userId } })
         if (!user) return null
         delete user.password
+        return user
+    }
+
+    async findUserByEmail(email: string) {
+        const user = await this.prisma.user.findUnique({ where: { email } })
+        return user
+    }
+
+    async findUserByUsername(username: string) {
+        const user = await this.prisma.user.findUnique({ where: { username } })
         return user
     }
 

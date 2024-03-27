@@ -12,7 +12,9 @@ export class UserController {
   @Post("/register")
   async register(@Body() regiterDTO: RegisterDTO, @Res() res: Response) {
     const response = await this.userService.register(regiterDTO)
-    return res.status(200).json(response)
+    if (response === -1) return res.status(400).json({ message: "Duplicated username" })
+    if (response === -2) return res.status(400).json({ message: "Duplicated email" })
+    return res.status(200).json({ message: 'success' })
   }
 
   @UseGuards(AuthGuard)
