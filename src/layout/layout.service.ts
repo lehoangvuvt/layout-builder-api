@@ -9,19 +9,20 @@ export class LayoutService {
     constructor(private prisma: PrismaService) { }
 
     async createLayout(userId: number, createLayoutDTO: CreateLayoutDTO) {
-        const { metadata, name, tags } = createLayoutDTO
+        const { metadata, name, tags, status } = createLayoutDTO
         return this.prisma.layout.create({
             data: {
                 createdAt: new Date(),
                 metadata,
                 authorId: userId,
                 tags,
-                name
+                name,
+                status
             }
         })
     }
     async updateLayout(id: number, userId: number, updateLayoutDTO: UpdateLayoutDTO) {
-        const { metadata, name, tags } = updateLayoutDTO
+        const { metadata, name, tags, status } = updateLayoutDTO
         const layout = await this.prisma.layout.findUnique({ where: { id } })
         if (!layout) return -1
         const isValidOwner = layout.authorId === userId
@@ -32,7 +33,7 @@ export class LayoutService {
             const updateLayout = await this.prisma.layout.update({
                 where: { id },
                 data: {
-                    name, tags, metadata
+                    name, tags, metadata, status
                 }
             })
             return updateLayout
@@ -77,9 +78,11 @@ export class LayoutService {
         }
         const count = await this.prisma.layout.count({
             where: whereInput,
+            orderBy: { createdAt: 'desc' }
         })
         const layouts = await this.prisma.layout.findMany({
             where: whereInput,
+            orderBy: { createdAt: 'desc' },
             include: { author: { select: { username: true, id: true, name: true } } },
             skip: page * take, take
         })
@@ -88,7 +91,7 @@ export class LayoutService {
             current_page: page,
             total_page: Math.ceil(count / take),
             total: count,
-            limt: take
+            limit: take
         }
     }
 

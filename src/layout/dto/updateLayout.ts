@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsString } from "class-validator";
 
 export class UpdateLayoutDTO {
     @IsString()
@@ -12,4 +12,8 @@ export class UpdateLayoutDTO {
     @IsArray()
     @IsNotEmpty()
     tags: string[]
+
+    @IsString()
+    @IsNotEmpty()
+    status: string
 }

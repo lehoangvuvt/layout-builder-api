@@ -12,4 +12,8 @@ export class CreateLayoutDTO {
     @IsArray()
     @IsNotEmpty()
     tags: string[]
+
+    @IsString()
+    @IsNotEmpty()
+    status: string;
 }

@@ -29,7 +29,6 @@ export class LayoutController {
     if (response === -2) return { message: 'Invalid owner' }
     if (response === -3) return { message: 'Layout already published' }
     if (response === -4) return { message: 'Unexpected error' }
-    console.log({ response })
     return res.status(200).json({ message: 'success', data: response })
   }
 

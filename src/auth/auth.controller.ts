@@ -4,12 +4,6 @@ import { Request, Response } from 'express';
 import { AuthGuard } from 'src/guards/auth.guard';
 import { UserService } from 'src/user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { Octokit } from "@octokit/rest";
-import fetch from "node-fetch";
-import axios from 'axios';
-import { appendFile } from 'fs'
-import shortid from 'shortid';
-import { nanoid } from 'nanoid';
 
 @Controller('auth')
 export class AuthController {

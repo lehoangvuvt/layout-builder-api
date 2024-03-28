@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { compareSync, hashSync } from 'bcrypt'
 import { RegisterDTO } from './dto/register.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UserService {
@@ -54,11 +55,37 @@ export class UserService {
         return user
     }
 
-    async getUserLayouts(userId: number) {
+    async getUserLayouts(userId: number, searchParams: string) {
+        let query = {}
+        searchParams.split('&').forEach(param => {
+            const key = param.split("=")[0]
+            const values = param.split("=")[1].split(",")
+            query[key] = values
+        })
+        const page = query['page'] ? parseInt(query['page'][0]) : 0
+        const status = query['status'] ? query['status'] : ['draft', 'published']
+        const take = query['take'] ? parseInt(query['take'][0]) : 10;
+        const skip = take * page
+        const whereInput: Prisma.LayoutWhereInput = {
+            authorId: userId, status: { in: status },
+        }
+        const count = await this.prisma.layout.count({
+            where: whereInput,
+            orderBy: { createdAt: 'desc' }
+        })
         const layouts = await this.prisma.layout.findMany({
-            where: { authorId: userId },
+            where: whereInput,
+            orderBy: { createdAt: 'desc' },
+            take,
+            skip,
             include: { author: { select: { username: true, id: true, name: true } } },
         });
-        return layouts
+        return {
+            items: layouts,
+            current_page: page,
+            total_page: Math.ceil(count / take),
+            total: count,
+            limit: take
+        }
     }
 }
