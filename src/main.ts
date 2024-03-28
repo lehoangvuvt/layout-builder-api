@@ -4,8 +4,6 @@ import * as express from 'express'
 import * as cors from 'cors'
 import * as cookieParser from 'cookie-parser'
 import { ValidationPipe } from '@nestjs/common';
-import { LoggingInterceptor } from './interceptors/logging.interceptor';
-import { Test2Middleware } from './middlewares/test2.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,7 +11,6 @@ async function bootstrap() {
   app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }))
   app.use(express.json({ limit: '50mb' }))
   app.useGlobalPipes(new ValidationPipe());
-  app.useGlobalInterceptors(new LoggingInterceptor())
   const port = process.env.PORT || 3001
   await app.listen(port);
 }

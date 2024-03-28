@@ -5,11 +5,10 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { LayoutModule } from './layout/layout.module';
-import { TestMiddleware } from './middlewares/test.middleware';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from './guards/throttler.guard';
-import { Test2Middleware } from './middlewares/test2.middleware';
+import { GithubModule } from './github/github.module';
 
 @Module({
   imports: [
@@ -17,7 +16,7 @@ import { Test2Middleware } from './middlewares/test2.middleware';
       limit: 10,
       ttl: 60
     }]),
-    AuthModule, UserModule, PrismaModule, LayoutModule],
+    AuthModule, UserModule, PrismaModule, LayoutModule, GithubModule],
   controllers: [AppController],
   providers: [AppService, {
     provide: APP_GUARD,
@@ -26,9 +25,5 @@ import { Test2Middleware } from './middlewares/test2.middleware';
   exports: []
 })
 export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(Test2Middleware).forRoutes('/auth')
-  }
-
-
+  configure(consumer: MiddlewareConsumer) { }
 }

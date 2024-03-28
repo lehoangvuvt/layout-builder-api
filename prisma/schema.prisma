@@ -19,7 +19,7 @@ model User {
   updatedAt DateTime?
   username  String    @unique
   password  String
-  email     String    @unique
+  email     String?   @unique
   name      String?
   avatar    String?
   layouts   Layout[]
@@ -35,4 +35,5 @@ model Layout {
   metadata  String
   author    User      @relation(fields: [authorId], references: [id])
   authorId  Int
+  status    String    @default("draft")
 }

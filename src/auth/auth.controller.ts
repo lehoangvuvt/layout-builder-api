@@ -53,58 +53,6 @@ export class AuthController {
     res.redirect(`${process.env.CLIENT_URL}/overlay-builder/setup?id=${params.layoutId}&mode=granted`)
   }
 
-  @Get('/oauth/github-repos')
-  async getGithubRepos(@Req() req: Request, @Res() res: Response) {
-    if (req.cookies && req.cookies['grp_act']) {
-      const response = await axios({
-        method: "GET",
-        url: ` https://api.github.com/user/repos?page=0&per_page=5&sort=created&direction=desc`,
-        headers: {
-          Authorization: `token ${req.cookies['grp_act']}`,
-        },
-      })
-      const data = response.data
-      return res.status(200).json({ message: 'success', data })
-    }
-    throw new UnauthorizedException()
-  }
-
-  @Post('/oauth/github-commit')
-  async commitCodeToRepo(@Req() req: Request, @Body() body: any, @Res() res: Response) {
-    console.log(req.cookies)
-    if (req.cookies && req.cookies['grp_act']) {
-      const { repo, code } = body
-      const { owner, name } = repo
-      const octokit = new Octokit({
-        baseUrl: "https://api.github.com",
-        auth: `token ${req.cookies['grp_act']}`,
-      });
-
-      const OWNER_NAME = owner.login
-      const REPO_NAME = name
-      const FILE_PATH = `components/${nanoid()}.tsx`
-      const AUTHOR_NAME = owner.login
-      const AUTHOR_EMAIL = "hoangvule100@gmail.com"
-      const user_info = {
-        name: AUTHOR_NAME,
-        email: AUTHOR_EMAIL
-      }
-
-      await octokit.rest.repos.createOrUpdateFileContents({
-        owner: OWNER_NAME,
-        repo: REPO_NAME,
-        path: FILE_PATH,
-        message: "Create file",
-        content: Buffer.from(code).toString('base64'),
-        committer: { ...user_info },
-        author: { ...user_info },
-      })
-
-      return res.status(201).json({ message: 'success' })
-    }
-    throw new UnauthorizedException()
-  }
-
   @Get("/oauth/:type")
   async oauthGoogle(@Param() params: { type: 'google' | 'github' | 'facebook' }, @Req() req: Request, @Res() res: Response) {
     let existedUser = null
@@ -129,7 +77,7 @@ export class AuthController {
             avatar: picture,
             password: ggUsername
           })
-          if (data === -1 || data === -2) return
+          if (data === -1) return
           const payload = { sub: data.id, username: ggUsername }
           const access_token = await this.jwtSerivce.signAsync(payload);
           res.cookie('access_token', access_token, { httpOnly: true, sameSite: 'none', secure: true })
@@ -142,7 +90,7 @@ export class AuthController {
         const userData = await this.authService.getGithubUserInfo(accessToken)
         const { id: ghId, avatar_url, email: ghEmail } = userData
         const gh_userName = `ghid_${ghId}`;
-        existedUser = await this.userService.findUserByEmail(ghEmail);
+        existedUser = await this.userService.findUserByUsername(gh_userName);
         if (existedUser) {
           const payload = { sub: existedUser.id, username: existedUser.username }
           const access_token = await this.jwtSerivce.signAsync(payload);
@@ -150,12 +98,11 @@ export class AuthController {
           res.redirect(`${process.env.CLIENT_URL}/search`)
         } else {
           const data = await this.userService.register({
-            email: ghEmail,
             username: gh_userName,
             avatar: avatar_url,
             password: gh_userName
           })
-          if (data === -1 || data === -2) return
+          if (data === -1) return
           const payload = { sub: data.id, username: gh_userName }
           const access_token = await this.jwtSerivce.signAsync(payload);
           res.cookie('access_token', access_token, { httpOnly: true, sameSite: 'none', secure: true })

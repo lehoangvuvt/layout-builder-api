@@ -10,9 +10,7 @@ export class UserService {
     async register(registerDTO: RegisterDTO) {
         const { username, password, email, avatar } = registerDTO
         const existedUsername = await this.prisma.user.findUnique({ where: { username } })
-        const existedEmail = await this.prisma.user.findUnique({ where: { email } })
         if (existedUsername) return -1
-        if (existedEmail) return -2
         const hashedPassword = hashSync(password, 10)
         const user = await this.prisma.user.create({
             data: {

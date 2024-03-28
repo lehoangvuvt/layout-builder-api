@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateLayoutDTO } from './dto/createLayout.dto';
 import { Prisma } from '@prisma/client';
+import { UpdateLayoutDTO } from './dto/updateLayout';
 
 @Injectable()
 export class LayoutService {
@@ -19,6 +20,26 @@ export class LayoutService {
             }
         })
     }
+    async updateLayout(id: number, userId: number, updateLayoutDTO: UpdateLayoutDTO) {
+        const { metadata, name, tags } = updateLayoutDTO
+        const layout = await this.prisma.layout.findUnique({ where: { id } })
+        if (!layout) return -1
+        const isValidOwner = layout.authorId === userId
+        const isDraftLayout = layout.status === 'draft'
+        if (!isValidOwner) return -2
+        if (!isDraftLayout) return -3
+        try {
+            const updateLayout = await this.prisma.layout.update({
+                where: { id },
+                data: {
+                    name, tags, metadata
+                }
+            })
+            return updateLayout
+        } catch (error) {
+            return -4
+        }
+    }
 
     async findLayouts(searchParams: string) {
         let query: { [key: string]: string[] } = {}
@@ -34,7 +55,7 @@ export class LayoutService {
                     name: {
                         contains: q,
                         mode: 'insensitive'
-                    }
+                    },
                 },
                 {
                     tags: {
@@ -49,7 +70,10 @@ export class LayoutService {
                         }
                     }
                 }
-            ]
+            ],
+            AND: {
+                status: 'published'
+            }
         }
         const count = await this.prisma.layout.count({
             where: whereInput,
@@ -68,7 +92,8 @@ export class LayoutService {
         }
     }
 
-    async getLayoutDetails(id: number) {
+    async getLayoutDetails(id: number, userId: number) {
+
         const layout = await this.prisma.layout.findUnique({
             where: { id },
             include: {
@@ -81,6 +106,10 @@ export class LayoutService {
                 }
             }
         });
+        if (layout.status === 'draft') {
+            const isOwner = layout.authorId === userId
+            if (!isOwner) return -1
+        }
         return layout
     }
 
