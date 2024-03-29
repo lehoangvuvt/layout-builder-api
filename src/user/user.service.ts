@@ -64,7 +64,7 @@ export class UserService {
         })
         const page = query['page'] ? parseInt(query['page'][0]) : 0
         const status = query['status'] ? query['status'] : ['draft', 'published']
-        const take = query['take'] ? parseInt(query['take'][0]) : 10;
+        const take = query['take'] ? parseInt(query['take'][0]) : 12;
         const orderBy = query['sortBy'] ? query['sortBy'][0] : 'createdAt'
         const direction = query['direction'] ? query['direction'][0] : 'desc'
         const skip = take * page
@@ -80,7 +80,7 @@ export class UserService {
             orderBy: { [orderBy]: direction },
             take,
             skip,
-            include: { author: { select: { username: true, id: true, name: true } } },
+            include: { author: { select: { username: true, id: true, name: true, avatar: true } } },
         });
         return {
             items: layouts,

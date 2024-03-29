@@ -49,7 +49,7 @@ export class LayoutService {
         })
         const page = query['page'] ? parseInt(query['page'][0]) : 0
         const q = query['q'] ? query['q'][0] : ''
-        const take = query['take'] ? parseInt(query['take'][0]) : 10
+        const take = query['take'] ? parseInt(query['take'][0]) : 12
         const whereInput: Prisma.LayoutWhereInput = {
             OR: [
                 {
@@ -83,7 +83,7 @@ export class LayoutService {
         const layouts = await this.prisma.layout.findMany({
             where: whereInput,
             orderBy: { createdAt: 'desc' },
-            include: { author: { select: { username: true, id: true, name: true } } },
+            include: { author: { select: { username: true, id: true, name: true, avatar: true } } },
             skip: page * take, take
         })
         return {
