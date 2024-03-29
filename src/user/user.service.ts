@@ -65,7 +65,7 @@ export class UserService {
         const page = query['page'] ? parseInt(query['page'][0]) : 0
         const status = query['status'] ? query['status'] : ['draft', 'published']
         const take = query['take'] ? parseInt(query['take'][0]) : 12;
-        const orderBy = query['sortBy'] ? query['sortBy'][0] : 'createdAt'
+        const orderBy = query['sortBy'] ? query['sortBy'][0] : 'updatedAt'
         const direction = query['direction'] ? query['direction'][0] : 'desc'
         const skip = take * page
         const whereInput: Prisma.LayoutWhereInput = {

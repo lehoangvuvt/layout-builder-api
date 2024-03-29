@@ -13,6 +13,7 @@ export class LayoutService {
         return this.prisma.layout.create({
             data: {
                 createdAt: new Date(),
+                updatedAt: new Date(),
                 metadata,
                 authorId: userId,
                 tags,
@@ -33,7 +34,8 @@ export class LayoutService {
             const updateLayout = await this.prisma.layout.update({
                 where: { id },
                 data: {
-                    name, tags, metadata, status
+                    name, tags, metadata, status,
+                    updatedAt: new Date()
                 }
             })
             return updateLayout
@@ -78,11 +80,11 @@ export class LayoutService {
         }
         const count = await this.prisma.layout.count({
             where: whereInput,
-            orderBy: { createdAt: 'desc' }
+            orderBy: { updatedAt: 'desc' }
         })
         const layouts = await this.prisma.layout.findMany({
             where: whereInput,
-            orderBy: { createdAt: 'desc' },
+            orderBy: { updatedAt: 'desc' },
             include: { author: { select: { username: true, id: true, name: true, avatar: true } } },
             skip: page * take, take
         })
@@ -96,7 +98,6 @@ export class LayoutService {
     }
 
     async getLayoutDetails(id: number, userId: number) {
-
         const layout = await this.prisma.layout.findUnique({
             where: { id },
             include: {
