@@ -1,9 +1,8 @@
-import { Body, Controller, Get, NotFoundException, Param, Post, Put, Req, Res, UnauthorizedException, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, Delete, NotFoundException, Param, Post, Put, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { LayoutService } from './layout.service';
 import { AuthGuard } from 'src/guards/auth.guard';
 import { CreateLayoutDTO } from './dto/createLayout.dto';
 import { Response } from 'express';
-import { VerifyMetadataPipe } from 'src/pipes/verifyMetadata.pipe';
 import { UpdateLayoutDTO } from './dto/updateLayout';
 import { JwtService } from '@nestjs/jwt';
 import { jwtConstants } from 'src/auth/constants';
@@ -50,5 +49,25 @@ export class LayoutController {
     if (response === -1) throw new UnauthorizedException()
     if (response === null) throw new NotFoundException()
     return res.status(200).json({ message: 'success', data: response })
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('/:id')
+  async deleteLayout(@Req() req: any, @Param() params: { id: string }, @Res() res: Response) {
+    const userId = parseInt(req.user.sub)
+    const layoutId = parseInt(params.id)
+    const response = await this.layoutService.removeLayout(userId, layoutId)
+    switch (response) {
+      case -4:
+        return res.status(400).json({ message: 'Internal server error' })
+      case -3:
+        return res.status(400).json({ message: 'Not have permission' })
+      case -2:
+        return res.status(400).json({ message: 'Already published' })
+      case -1:
+        return res.status(400).json({ message: 'Invalid layout id' })
+      case 1:
+        return res.status(200).json({ message: 'success' })
+    }
   }
 }

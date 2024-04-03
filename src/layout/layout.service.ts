@@ -121,4 +121,17 @@ export class LayoutService {
         const layouts = await this.prisma.layout.findMany({ take: 5 })
         return layouts
     }
+
+    async removeLayout(userId: number, layoutId: number): Promise<number> {
+        const layout = await this.prisma.layout.findUnique({ where: { id: layoutId } })
+        if (!layout) return -1
+        if (layout.status === 'published') return -2
+        if (layout.authorId !== userId) return -3
+        try {
+            const response = await this.prisma.layout.delete({ where: { id: layoutId } })
+            return 1
+        } catch (err) {
+            return -4
+        }
+    }
 }   
