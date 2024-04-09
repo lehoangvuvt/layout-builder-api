@@ -9,6 +9,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from './guards/throttler.guard';
 import { GithubModule } from './github/github.module';
+import { BookmarkModule } from './bookmark/bookmark.module';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { GithubModule } from './github/github.module';
       limit: 10,
       ttl: 60
     }]),
-    AuthModule, UserModule, PrismaModule, LayoutModule, GithubModule],
+    AuthModule, UserModule, PrismaModule, LayoutModule, GithubModule, BookmarkModule],
   controllers: [AppController],
   providers: [AppService, {
     provide: APP_GUARD,

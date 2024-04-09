@@ -26,30 +26,4 @@ export class UserController {
       data: layouts,
     })
   }
-
-  @UseGuards(AuthGuard)
-  @Get('/bookmarks')
-  async getUserBookmarks(@Req() req: any, @Res() res: Response) {
-    const userId = req.user.sub
-    const bookmarks = await this.userService.getUserBookmarks(userId)
-    return res.status(200).json({ message: 'success', data: bookmarks })
-  }
-
-  @UseGuards(AuthGuard)
-  @Post('/bookmarks/add-to-bookmark')
-  async addLayoutToBookmark(@Req() req: any, @Body() addToBookmarkDTO: AddToBookmarkDTO, @Res() res: Response) {
-    const userId = req.user.sub
-    const response = await this.userService.saveLayoutToBookmark(userId, addToBookmarkDTO.layoutId)
-    if (!response) res.status(400).json({ message: 'error' })
-    return res.status(201).json({ message: 'success' })
-  }
-
-  @UseGuards(AuthGuard)
-  @Delete('/bookmarks/remove-from-bookmark')
-  async removeLayoutFromBookmark(@Req() req: any, @Body() addToBookmarkDTO: AddToBookmarkDTO, @Res() res: Response) {
-    const userId = req.user.sub
-    const response = await this.userService.removeFromBookmark(userId, addToBookmarkDTO.layoutId)
-    if (!response) res.status(400).json({ message: 'error' })
-    return res.status(204).json({ message: 'success' })
-  }
 }

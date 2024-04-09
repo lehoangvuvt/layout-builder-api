@@ -22,6 +22,7 @@ export class LayoutService {
       },
     })
   }
+
   async updateLayout(id: number, userId: number, updateLayoutDTO: UpdateLayoutDTO) {
     const { metadata, name, tags, status } = updateLayoutDTO
     const layout = await this.prisma.layout.findUnique({ where: { id } })
@@ -114,11 +115,26 @@ export class LayoutService {
         },
       },
     })
+    const isOwner = layout.authorId === userId
     if (layout.status === 'draft') {
-      const isOwner = layout.authorId === userId
       if (!isOwner) return -1
+    } else {
+      if (!isOwner) {
+        const currentViewCount = layout.view_count
+        this.updateLayoutDynamicFields(layout.id, { view_count: currentViewCount + 1 })
+      }
     }
     return layout
+  }
+
+  async updateLayoutDynamicFields(id: number, updateFields: Prisma.LayoutUpdateInput) {
+    const response = await this.prisma.layout.update({
+      where: { id },
+      data: {
+        ...updateFields,
+      },
+    })
+    return response
   }
 
   async getTopLayouts() {

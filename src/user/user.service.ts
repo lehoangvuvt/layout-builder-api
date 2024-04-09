@@ -47,28 +47,6 @@ export class UserService {
     return user
   }
 
-  async getUserBookmarks(userId: number) {
-    const bookmarks = await this.prisma.bookmark.findMany({
-      where: { userId },
-      include: {
-        layout: {
-          select: {
-            id: true,
-            name: true,
-            metadata: true,
-            author: true,
-            authorId: true,
-            tags: true,
-            createdAt: true,
-            updatedAt: true,
-            status: true,
-          },
-        },
-      },
-    })
-    return bookmarks
-  }
-
   async findUserByEmail(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email } })
     return user
@@ -113,38 +91,6 @@ export class UserService {
       total_page: Math.ceil(count / take),
       total: count,
       limit: take,
-    }
-  }
-
-  async saveLayoutToBookmark(userId: number, layoutId: number) {
-    try {
-      const response = await this.prisma.bookmark.create({
-        data: {
-          createdAt: new Date(),
-          layoutId,
-          userId,
-        },
-      })
-      return response
-    } catch (err) {
-      return null
-    }
-  }
-
-  async removeFromBookmark(userId: number, layoutId: number) {
-    try {
-      const bookmarkToDelete = await this.prisma.bookmark.findFirst({ where: { userId: userId, layoutId } })
-      if (!bookmarkToDelete) return -1
-      if (bookmarkToDelete.userId !== userId) return -2
-      const response = await this.prisma.bookmark.deleteMany({
-        where: {
-          userId,
-          layoutId,
-        },
-      })
-      return response
-    } catch (err) {
-      return -3
     }
   }
 }
