@@ -4,10 +4,11 @@ import { RegisterDTO } from './dto/register.dto'
 import { Response } from 'express'
 import { AuthGuard } from 'src/guards/auth.guard'
 import { AddToBookmarkDTO } from './dto/addToBookmark'
+import { LayoutService } from 'src/layout/layout.service'
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService, private readonly layoutService: LayoutService) {}
 
   @Post('/register')
   async register(@Body() regiterDTO: RegisterDTO, @Res() res: Response) {
@@ -20,7 +21,7 @@ export class UserController {
   @Get('/layouts/:searchParams')
   async getMyLayouts(@Param() params: { searchParams: string }, @Req() req: any, @Res() res: Response) {
     const userId = req.user.sub
-    const layouts = await this.userService.getUserLayouts(userId, params.searchParams)
+    const layouts = await this.layoutService.findLayouts(params.searchParams, userId)
     return res.status(200).json({
       message: 'success',
       data: layouts,

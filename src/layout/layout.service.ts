@@ -48,7 +48,7 @@ export class LayoutService {
     }
   }
 
-  async findLayouts(searchParams: string) {
+  async findLayouts(searchParams: string, userId: number | null = null) {
     let query: { [key: string]: string[] } = {}
     searchParams.split('&').forEach((item) => {
       query[item.split('=')[0]] = item.split('=')[1].split(',')
@@ -56,6 +56,7 @@ export class LayoutService {
     const page = query['page'] ? parseInt(query['page'][0]) : 0
     const q = query['q'] ? query['q'][0] : ''
     const take = query['take'] ? parseInt(query['take'][0]) : 12
+    const status = query['status'] ? query['status'] : ['published']
     const whereInput: Prisma.LayoutWhereInput = {
       OR: [
         {
@@ -78,20 +79,55 @@ export class LayoutService {
           },
         },
       ],
-      AND: {
-        status: 'published',
-      },
+      AND: userId
+        ? {
+            status: { in: status },
+            authorId: userId,
+          }
+        : {
+            status: { in: status },
+          },
     }
+    const sortByQuery = query['sortBy'] ? query['sortBy'][0] : 'latest'
+    let orderBy = null
+    switch (sortByQuery) {
+      case 'pop':
+        orderBy = [
+          {
+            layout_views: { _count: 'desc' },
+          },
+          {
+            bookmarks: { _count: 'desc' },
+          },
+        ]
+        break
+      case 'latest':
+      default:
+        orderBy = { updatedAt: 'desc' }
+        break
+    }
+
     const count = await this.prisma.layout.count({
       where: whereInput,
-      orderBy: { updatedAt: 'desc' },
+      orderBy,
     })
-    const layouts = await this.prisma.layout.findMany({
-      where: whereInput,
-      orderBy: { updatedAt: 'desc' },
-      include: { author: { select: { username: true, id: true, name: true, avatar: true } } },
-      skip: page * take,
-      take,
+    const layouts = (
+      await this.prisma.layout.findMany({
+        where: whereInput,
+        orderBy,
+        include: {
+          author: { select: { username: true, id: true, name: true, avatar: true } },
+          layout_views: { select: { id: true } },
+          bookmarks: { select: { id: true } },
+        },
+        skip: page * take,
+        take,
+      })
+    ).map((layout) => {
+      const item = { ...layout, view_count: layout.layout_views.length, bookmark_count: layout.bookmarks.length }
+      delete item.bookmarks
+      delete item.layout_views
+      return item
     })
     return {
       items: layouts,
@@ -102,7 +138,7 @@ export class LayoutService {
     }
   }
 
-  async getLayoutDetails(id: number, userId: number) {
+  async getLayoutDetails(id: number, userId: number | null, guestId: string | null) {
     const layout = await this.prisma.layout.findUnique({
       where: { id },
       include: {
@@ -120,8 +156,17 @@ export class LayoutService {
       if (!isOwner) return -1
     } else {
       if (!isOwner) {
-        const currentViewCount = layout.view_count
-        this.updateLayoutDynamicFields(layout.id, { view_count: currentViewCount + 1 })
+        const viewer_id = userId ? userId.toString() : guestId
+        this.prisma.layoutView
+          .create({
+            data: {
+              viewer_id,
+              layoutId: layout.id,
+            },
+          })
+          .then()
+          .catch((ex) => {})
+        // this.updateLayoutDynamicFields(layout.id, { view_count: currentViewCount + 1 })
       }
     }
     return layout

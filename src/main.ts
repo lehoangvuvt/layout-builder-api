@@ -9,7 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser())
   app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }))
-  app.use(express.json({ limit: '50mb' }))
+  app.use(express.json({ limit: ' ' }))
   app.useGlobalPipes(new ValidationPipe());
   const port = process.env.PORT || 3001
   await app.listen(port);

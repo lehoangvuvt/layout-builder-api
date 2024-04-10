@@ -38,7 +38,7 @@ model Layout {
   authorId  Int
   status    String     @default("draft")
   bookmarks  Bookmark[]
-  view_count Int @default(0)
+  layout_views LayoutView[]
 }
 
 model Bookmark {
@@ -50,12 +50,14 @@ model Bookmark {
   layout    Layout    @relation(fields: [layoutId], references: [id])
   layoutId  Int
 
-  @@index([userId, layoutId])
+  @@unique([userId, layoutId])
 }
 
 model LayoutView {
   id Int @id @default(autoincrement())
-  session_id String
-  userId Int
+  viewer_id String
+  layout Layout @relation(fields: [layoutId], references: [id])
   layoutId Int
+
+  @@unique([viewer_id, layoutId])
 }
