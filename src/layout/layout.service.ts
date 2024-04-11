@@ -9,7 +9,13 @@ export class LayoutService {
   constructor(private prisma: PrismaService) {}
 
   async createLayout(userId: number, createLayoutDTO: CreateLayoutDTO) {
-    const { metadata, name, tags, status } = createLayoutDTO
+    const { metadata, name, tags, status, fork_layout_id } = createLayoutDTO
+    if (fork_layout_id) {
+      console.log({ fork_layout_id })
+      this.updateLayoutDynamicFields(fork_layout_id, {
+        fork_count: { increment: 1 },
+      })
+    }
     return this.prisma.layout.create({
       data: {
         createdAt: new Date(),
@@ -94,10 +100,13 @@ export class LayoutService {
       case 'pop':
         orderBy = [
           {
-            layout_views: { _count: 'desc' },
+            fork_count: 'desc',
           },
           {
             bookmarks: { _count: 'desc' },
+          },
+          {
+            layout_views: { _count: 'desc' },
           },
         ]
         break

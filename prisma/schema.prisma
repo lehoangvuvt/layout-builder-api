@@ -38,6 +38,7 @@ model Layout {
   authorId  Int
   status    String     @default("draft")
   bookmarks  Bookmark[]
+  fork_count Int @default(0)
   layout_views LayoutView[]
 }
 

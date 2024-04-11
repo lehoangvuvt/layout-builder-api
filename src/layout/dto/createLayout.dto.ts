@@ -1,19 +1,23 @@
-import { IsArray, IsNotEmpty, IsString } from "class-validator";
+import { IsArray, IsNotEmpty, IsString, IsNumber, IsOptional } from 'class-validator'
 
 export class CreateLayoutDTO {
-    @IsString()
-    @IsNotEmpty()
-    name: string
+  @IsString()
+  @IsNotEmpty()
+  name: string
 
-    @IsString()
-    @IsNotEmpty()
-    metadata: string
+  @IsString()
+  @IsNotEmpty()
+  metadata: string
 
-    @IsArray()
-    @IsNotEmpty()
-    tags: string[]
+  @IsArray()
+  @IsNotEmpty()
+  tags: string[]
 
-    @IsString()
-    @IsNotEmpty()
-    status: string;
+  @IsString()
+  @IsNotEmpty()
+  status: string
+
+  @IsOptional()
+  @IsNumber()
+  fork_layout_id?: number
 }
