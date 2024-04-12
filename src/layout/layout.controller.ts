@@ -1,4 +1,18 @@
-import { Body, Controller, Get, Delete, NotFoundException, Param, Post, Put, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  Delete,
+  NotFoundException,
+  Param,
+  Post,
+  Put,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common'
 import { LayoutService } from './layout.service'
 import { AuthGuard } from 'src/guards/auth.guard'
 import { CreateLayoutDTO } from './dto/createLayout.dto'
@@ -6,6 +20,7 @@ import { Response, Request } from 'express'
 import { UpdateLayoutDTO } from './dto/updateLayout'
 import { JwtService } from '@nestjs/jwt'
 import { jwtConstants } from 'src/auth/constants'
+import { CreateCommentDTO } from './dto/createComment.dto copy'
 
 @Controller('layout')
 export class LayoutController {
@@ -72,5 +87,14 @@ export class LayoutController {
       case 1:
         return res.status(200).json({ message: 'success' })
     }
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/comments')
+  async createComment(@Req() req: any, @Body() createCommentDTO: CreateCommentDTO, @Res() res: Response) {
+    const userId = req.user.sub
+    const response = await this.layoutService.createComment(userId, createCommentDTO)
+    if (!response) throw new BadRequestException()
+    return res.status(200).json({ message: 'success' })
   }
 }

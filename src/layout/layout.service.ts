@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service'
 import { CreateLayoutDTO } from './dto/createLayout.dto'
 import { Prisma } from '@prisma/client'
 import { UpdateLayoutDTO } from './dto/updateLayout'
+import { CreateCommentDTO } from './dto/createComment.dto copy'
 
 @Injectable()
 export class LayoutService {
@@ -128,14 +129,16 @@ export class LayoutService {
           author: { select: { username: true, id: true, name: true, avatar: true } },
           layout_views: { select: { id: true } },
           bookmarks: { select: { id: true } },
+          comments: { select: { id: true } },
         },
         skip: page * take,
         take,
       })
     ).map((layout) => {
-      const item = { ...layout, view_count: layout.layout_views.length, bookmark_count: layout.bookmarks.length }
+      const item = { ...layout, view_count: layout.layout_views.length, bookmark_count: layout.bookmarks.length, comment_count: layout.comments.length }
       delete item.bookmarks
       delete item.layout_views
+      delete item.comments
       return item
     })
     return {
@@ -158,8 +161,35 @@ export class LayoutService {
             name: true,
           },
         },
+        bookmarks: {
+          select: {
+            user: {
+              select: {
+                username: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+        comments: {
+          select: {
+            user: {
+              select: {
+                username: true,
+                avatar: true,
+              },
+            },
+            content: true,
+            createdAt: true,
+          },
+        },
+        layout_views: {
+          select: { id: true },
+        },
       },
     })
+    layout['view_count'] = layout.layout_views.length
+    delete layout.layout_views
     const isOwner = layout.authorId === userId
     if (layout.status === 'draft') {
       if (!isOwner) return -1
@@ -206,6 +236,23 @@ export class LayoutService {
       return 1
     } catch (err) {
       return -4
+    }
+  }
+
+  async createComment(userId: number, createCommentDTO: CreateCommentDTO) {
+    const { content, layout_id } = createCommentDTO
+    try {
+      const newComment = await this.prisma.comment.create({
+        data: {
+          createdAt: new Date(),
+          content,
+          layoutId: layout_id,
+          userId,
+        },
+      })
+      return true
+    } catch (err) {
+      return false
     }
   }
 }

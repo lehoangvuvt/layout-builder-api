@@ -21,6 +21,7 @@ export class BookmarkService {
               createdAt: true,
               updatedAt: true,
               status: true,
+              fork_count: true,
               layout_views: {
                 select: {
                   id: true,

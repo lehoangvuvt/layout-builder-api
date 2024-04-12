@@ -25,6 +25,7 @@ model User {
   layouts   Layout[]
   gitId     BigInt?
   bookmarks  Bookmark[]
+  comments Comment[]
 }
 
 model Layout {
@@ -40,6 +41,7 @@ model Layout {
   bookmarks  Bookmark[]
   fork_count Int @default(0)
   layout_views LayoutView[]
+  comments Comment[]
 }
 
 model Bookmark {
@@ -61,4 +63,15 @@ model LayoutView {
   layoutId Int
 
   @@unique([viewer_id, layoutId])
+}
+
+model Comment {
+  id Int @id @default(autoincrement())
+  createdAt DateTime
+  updatedAt DateTime?
+  user User @relation(fields: [userId], references: [id])
+  userId Int
+  layout Layout @relation(fields: [layoutId], references: [id])
+  layoutId Int
+  content String
 }
