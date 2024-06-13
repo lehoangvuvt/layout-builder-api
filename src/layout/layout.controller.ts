@@ -12,6 +12,7 @@ import {
   UnauthorizedException,
   UseGuards,
   BadRequestException,
+  Query,
 } from '@nestjs/common'
 import { LayoutService } from './layout.service'
 import { AuthGuard } from 'src/guards/auth.guard'
@@ -20,7 +21,7 @@ import { Response, Request } from 'express'
 import { UpdateLayoutDTO } from './dto/updateLayout'
 import { JwtService } from '@nestjs/jwt'
 import { jwtConstants } from 'src/auth/constants'
-import { CreateCommentDTO } from './dto/createComment.dto copy'
+import { CreateCommentDTO } from './dto/createComment.dto'
 
 @Controller('layout')
 export class LayoutController {
@@ -58,8 +59,12 @@ export class LayoutController {
     let userId: number | null = null
     let guestId: string | null = null
     if (req.cookies['access_token']) {
-      const decoded = await this.jwtService.verifyAsync(req['cookies']['access_token'], { secret: jwtConstants.secret })
-      userId = decoded.sub
+      try {
+        const decoded = await this.jwtService.verifyAsync(req['cookies']['access_token'], { secret: jwtConstants.secret })
+        userId = decoded.sub
+      } catch (err) {
+        guestId = req.cookies['guest_id']
+      }
     } else {
       guestId = req.cookies['guest_id']
     }
@@ -95,6 +100,13 @@ export class LayoutController {
     const userId = req.user.sub
     const response = await this.layoutService.createComment(userId, createCommentDTO)
     if (!response) throw new BadRequestException()
-    return res.status(200).json({ message: 'success' })
+    return res.status(200).json({ message: 'success', data: response })
+  }
+
+  @Get('/comments/:id')
+  async getLayoutComments(@Param() params: { id: string }, @Query() query: { page?: string; limit?: string }, @Res() res: Response) {
+    const response = await this.layoutService.getLayoutComments(parseInt(params.id), query)
+
+    return res.status(200).json({ message: 'success', data: response })
   }
 }

@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service'
 import { CreateLayoutDTO } from './dto/createLayout.dto'
 import { Prisma } from '@prisma/client'
 import { UpdateLayoutDTO } from './dto/updateLayout'
-import { CreateCommentDTO } from './dto/createComment.dto copy'
+import { CreateCommentDTO } from './dto/createComment.dto'
 
 @Injectable()
 export class LayoutService {
@@ -151,6 +151,7 @@ export class LayoutService {
   }
 
   async getLayoutDetails(id: number, userId: number | null, guestId: string | null) {
+    const total_comments = await this.prisma.comment.count({ where: { layoutId: id } })
     const layout = await this.prisma.layout.findUnique({
       where: { id },
       include: {
@@ -169,18 +170,6 @@ export class LayoutService {
                 avatar: true,
               },
             },
-          },
-        },
-        comments: {
-          select: {
-            user: {
-              select: {
-                username: true,
-                avatar: true,
-              },
-            },
-            content: true,
-            createdAt: true,
           },
         },
         layout_views: {
@@ -208,7 +197,98 @@ export class LayoutService {
         // this.updateLayoutDynamicFields(layout.id, { view_count: currentViewCount + 1 })
       }
     }
+    layout['total_comments'] = total_comments
     return layout
+  }
+
+  async getLayoutComments(id: number, query: { page?: string; limit?: string }) {
+    const data = await this.prisma.comment.findMany({
+      where: {
+        layoutId: id,
+        reply_to_comment_id: null,
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            username: true,
+            avatar: true,
+          },
+        },
+        reply_comments: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                username: true,
+                avatar: true,
+              },
+            },
+            reply_comments: {
+              include: {
+                user: true,
+                reply_comments: {
+                  include: {
+                    user: true,
+                    reply_comments: {
+                      include: {
+                        user: true,
+                        reply_comments: {
+                          include: {
+                            user: true,
+                            reply_comments: {
+                              include: {
+                                user: true,
+                                reply_comments: {
+                                  include: {
+                                    user: true,
+                                    reply_comments: {
+                                      include: {
+                                        user: true,
+                                        reply_comments: {
+                                          include: {
+                                            user: true,
+                                            reply_comments: true,
+                                          },
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            reply_to_comment_id: true,
+            content: true,
+            createdAt: true,
+          },
+        },
+      },
+      take: parseInt(query.limit),
+      skip: parseInt(query.limit) * parseInt(query.page),
+    })
+    const count = await this.prisma.comment.count({ where: { layoutId: id, reply_to_comment_id: null }, orderBy: { createdAt: 'desc' } })
+    return {
+      items: data,
+      current_page: parseInt(query.page),
+      total_page: Math.ceil(count / parseInt(query.limit)),
+      total: count,
+      limit: parseInt(query.limit),
+    }
+  }
+
+  async formatComments() {
+    // const formattedComments: {
+    //   comment: Prisma.$o
+    // }[]
+    // return
   }
 
   async updateLayoutDynamicFields(id: number, updateFields: Prisma.LayoutUpdateInput) {
@@ -248,11 +328,25 @@ export class LayoutService {
           content,
           layoutId: layout_id,
           userId,
+          reply_to_comment_id: createCommentDTO.reply_to_comment_id ?? null,
         },
       })
-      return true
+      const data = await this.prisma.comment.findUnique({
+        where: {
+          id: newComment.id,
+        },
+        include: {
+          user: {
+            select: {
+              username: true,
+              avatar: true,
+            },
+          },
+        },
+      })
+      return data
     } catch (err) {
-      return false
+      return null
     }
   }
 }
